@@ -10,15 +10,16 @@ import { GoogleAuth } from './components/GoogleAuth';
 // =================================================================================
 // STEP 1: YAHAN APNI GOOGLE CLIENT ID DAALEIN
 // Google Cloud Console se copy karke 'YOUR_GOOGLE_CLIENT_ID_HERE' ki jagah paste karein.
+// Example: '1234567890-abcdefg.apps.googleusercontent.com'
 // =================================================================================
-const GOOGLE_CLIENT_ID: string = '264170930084-rpsdfjboohsco9qsv3n1780m3a6u2u5o.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID: string = 'YOUR_GOOGLE_CLIENT_ID_HERE';
 
 // =================================================================================
 // STEP 2: YAHAN APNI GOOGLE DRIVE FOLDER ID (YA POORA URL) DAALEIN
 // Google Drive folder ke URL se ID copy karke paste karein.
-// Agar aap poora URL bhi daal denge, toh yeh code apne aap ID nikal lega.
+// Example: '1psxqy7OGWYQw-2V-EytAwlOvKdrBODXd'
 // =================================================================================
-const DRIVE_FOLDER_ID_INPUT: string = '1psxqy7OGWYQw-2V-EytAwlOvKdrBODXd';
+const DRIVE_FOLDER_ID_INPUT: string = 'YOUR_DRIVE_FOLDER_ID_HERE';
 
 // --- Helper function to extract Folder ID from URL ---
 const getDriveFolderId = (input: string): string => {
