@@ -4,7 +4,8 @@ import { TopicInput } from './components/TopicInput';
 import { WorkflowDisplay } from './components/WorkflowDisplay';
 import * as geminiService from './services/geminiService';
 import { Log, LogStatus, GeneratedAsset, AssetType } from './types';
-import { decode, pcmToWavBlob } from './utils/audioUtils';
+import { decode } from './utils/audioUtils';
+import { addTextToImage } from './utils/imageUtils';
 
 // NOTE: The user requested 50 titles, 18 image prompts, and 2 images per prompt.
 // For browser performance, API rate limits, and cost, these are reduced.
@@ -60,10 +61,10 @@ export default function App() {
         const titlesBlob = new Blob([titles.join('\n')], { type: 'text/plain' });
         addAsset(AssetType.TITLE_LIST, `${sanitizedTopic}_titles.txt`, titlesBlob);
         
-        // Calculate total steps for progress bar
-        totalSteps = 1 + (titles.length * 3); // 1 for titles, 3 steps per title (script, audio, image prompts)
-        setProgress(1 / totalSteps * 100);
+        // Calculate total steps for progress bar: titles (1) + 4 steps per title (script, audio, image, thumbnail)
+        totalSteps = 1 + (titles.length * 4);
         let completedSteps = 1;
+        setProgress(completedSteps / totalSteps * 100);
 
         for (let i = 0; i < titles.length; i++) {
             const currentTitle = titles[i];
@@ -74,38 +75,39 @@ export default function App() {
             addLog(LogStatus.PENDING, `[${titleNumber}/${titles.length}] Generating script for: "${currentTitle}"`);
             const script = await geminiService.generateScript(currentTitle);
             addLog(LogStatus.SUCCESS, `[${titleNumber}/${titles.length}] Script generated.`);
-            addAsset(AssetType.SCRIPT, `${assetNamePrefix}.txt`, new Blob([script], { type: 'text/plain' }));
+            addAsset(AssetType.SCRIPT, `${assetNamePrefix}_script.txt`, new Blob([script], { type: 'text/plain' }));
             completedSteps++;
             setProgress(completedSteps / totalSteps * 100);
             
             // Step 3: Generate Audio
             addLog(LogStatus.PENDING, `[${titleNumber}/${titles.length}] Generating voiceover...`);
-            const rawAudioData = await geminiService.generateAudio(script);
-            const base64Audio = new TextDecoder().decode(rawAudioData);
-            const pcmData = decode(base64Audio);
-            const audioBlob = pcmToWavBlob(pcmData, 24000, 1);
+            const audioBlob = await geminiService.generateAudio(script);
             addLog(LogStatus.SUCCESS, `[${titleNumber}/${titles.length}] Voiceover generated.`);
-            addAsset(AssetType.AUDIO, `${assetNamePrefix}.wav`, audioBlob);
+            addAsset(AssetType.AUDIO, `${assetNamePrefix}_audio.mp3`, audioBlob);
             completedSteps++;
             setProgress(completedSteps / totalSteps * 100);
 
-            // Step 4: Generate Image Prompts & Images
-            addLog(LogStatus.PENDING, `[${titleNumber}/${titles.length}] Generating image prompts...`);
-            const imagePrompts = await geminiService.generateImagePrompts(script);
-            addLog(LogStatus.SUCCESS, `[${titleNumber}/${titles.length}] Generated ${imagePrompts.length} image prompts.`);
+            // Step 4: Generate Thumbnail Image
+            addLog(LogStatus.PENDING, `[${titleNumber}/${titles.length}] Generating thumbnail prompt...`);
+            const thumbnailPrompt = await geminiService.generateThumbnailPrompt(currentTitle);
+            addLog(LogStatus.PENDING, `[${titleNumber}/${titles.length}] Generating image for: "${thumbnailPrompt.substring(0, 40)}..."`);
+            const imagesBase64 = await geminiService.generateImages(thumbnailPrompt);
+            const imageBase64 = imagesBase64[0];
+            if (!imageBase64) throw new Error("Failed to generate image.");
+            
+            const imageBlob = new Blob([decode(imageBase64)], { type: 'image/jpeg' });
+            addAsset(AssetType.IMAGE, `${assetNamePrefix}_image.jpg`, imageBlob);
+            addLog(LogStatus.SUCCESS, `[${titleNumber}/${titles.length}] Base image generated.`);
             completedSteps++;
             setProgress(completedSteps / totalSteps * 100);
 
-            for (let j = 0; j < imagePrompts.length; j++) {
-                const imgPrompt = imagePrompts[j];
-                addLog(LogStatus.PENDING, `[Img ${j + 1}/${imagePrompts.length}] Generating images for prompt: "${imgPrompt.substring(0, 40)}..."`);
-                const imagesBase64 = await geminiService.generateImages(imgPrompt);
-                imagesBase64.forEach((imgBase64, k) => {
-                    const imgBlob = new Blob([decode(imgBase64)], { type: 'image/jpeg' });
-                    addAsset(AssetType.IMAGE, `${assetNamePrefix}_img_${j+1}_${k+1}.jpg`, imgBlob);
-                });
-                addLog(LogStatus.SUCCESS, `[Img ${j + 1}/${imagePrompts.length}] Images generated.`);
-            }
+            // Step 5: Create Thumbnail (Add Text to Image)
+            addLog(LogStatus.PENDING, `[${titleNumber}/${titles.length}] Creating final thumbnail...`);
+            const thumbnailBlob = await addTextToImage(imageBlob, currentTitle);
+            addAsset(AssetType.THUMBNAIL, `${assetNamePrefix}_thumbnail.jpg`, thumbnailBlob);
+            addLog(LogStatus.SUCCESS, `[${titleNumber}/${titles.length}] Thumbnail created successfully.`);
+            completedSteps++;
+            setProgress(completedSteps / totalSteps * 100);
         }
         
         addLog(LogStatus.SUCCESS, "Workflow completed successfully!");
