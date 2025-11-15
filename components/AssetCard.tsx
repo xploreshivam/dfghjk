@@ -6,6 +6,7 @@ import { TextFileIcon } from './icons/TextFileIcon';
 import { AudioFileIcon } from './icons/AudioFileIcon';
 import { ImageFileIcon } from './icons/ImageFileIcon';
 import { TitleIcon } from './icons/TitleIcon';
+import { ThumbnailIcon } from './icons/ThumbnailIcon';
 
 interface AssetCardProps {
   asset: GeneratedAsset;
@@ -21,6 +22,8 @@ const getAssetInfo = (type: AssetType): { icon: React.ReactNode, color: string }
       return { icon: <AudioFileIcon className="w-8 h-8" />, color: 'text-purple-400' };
     case AssetType.IMAGE:
       return { icon: <ImageFileIcon className="w-8 h-8" />, color: 'text-amber-400' };
+    case AssetType.THUMBNAIL:
+      return { icon: <ThumbnailIcon className="w-8 h-8" />, color: 'text-rose-400' };
     default:
       return { icon: <div />, color: 'text-slate-400' };
   }
