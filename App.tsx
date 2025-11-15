@@ -12,14 +12,14 @@ import { GoogleAuth } from './components/GoogleAuth';
 // Google Cloud Console se copy karke 'YOUR_GOOGLE_CLIENT_ID_HERE' ki jagah paste karein.
 // For example: '1234567890-abcdefg.apps.googleusercontent.com'
 // =================================================================================
-const GOOGLE_CLIENT_ID = '264170930084-rpsdfjboohsco9qsv3n1780m3a6u2u5o.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE';
 
 // =================================================================================
 // STEP 2: YAHAN APNI GOOGLE DRIVE FOLDER ID DAALEIN
 // Google Drive folder ke URL se copy karke 'YOUR_DRIVE_FOLDER_ID_HERE' ki jagah paste karein.
 // For example: '1psxqy7OGWYQw-2V-EytAwlOvKdrBODXd'
 // =================================================================================
-const DRIVE_FOLDER_ID = 'https://drive.google.com/drive/u/6/folders/1psxqy7OGWYQw-2V-EytAwlOvKdrBODXd';
+const DRIVE_FOLDER_ID = 'YOUR_DRIVE_FOLDER_ID_HERE';
 
 
 const GOOGLE_API_SCOPES = 'https://www.googleapis.com/auth/drive.file';
@@ -41,8 +41,7 @@ export default function App() {
   const [generatedAssets, setGeneratedAssets] = useState<GeneratedAsset[]>([]);
   
   // Google Auth State
-  const [gapiReady, setGapiReady] = useState(false);
-  const [gisReady, setGisReady] = useState(false);
+  const [googleApiReady, setGoogleApiReady] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
   
@@ -65,45 +64,57 @@ export default function App() {
     setGeneratedAssets(prev => [asset, ...prev]);
   }, []);
 
-  // --- Google Drive Integration ---
+  // --- Google API Initialization ---
   useEffect(() => {
-    if (GOOGLE_CLIENT_ID === '264170930084-rpsdfjboohsco9qsv3n1780m3a6u2u5o.apps.googleusercontent.com' || DRIVE_FOLDER_ID === 'https://drive.google.com/drive/u/6/folders/1psxqy7OGWYQw-2V-EytAwlOvKdrBODXd') {
+    // Step 1: Check for configuration errors
+    if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE' || DRIVE_FOLDER_ID === 'YOUR_DRIVE_FOLDER_ID_HERE') {
       setConfigError('Configuration Error: Please set your Google Client ID and Drive Folder ID in the App.tsx file.');
       return;
     }
-    
-    // Load GAPI for Drive API
-    const gapiScript = document.createElement('script');
-    gapiScript.src = 'https://apis.google.com/js/api.js';
-    gapiScript.async = true;
-    gapiScript.defer = true;
-    gapiScript.onload = () => window.gapi.load('client', () => setGapiReady(true));
-    document.body.appendChild(gapiScript);
 
-    // Load GIS for OAuth2
-    const gisScript = document.createElement('script');
-    gisScript.src = 'https://accounts.google.com/gsi/client';
-    gisScript.async = true;
-    gisScript.defer = true;
-    gisScript.onload = () => setGisReady(true);
-    document.body.appendChild(gisScript);
-  }, []);
-
-  useEffect(() => {
-    if (gapiReady && gisReady && !configError) {
-      tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
-        client_id: GOOGLE_CLIENT_ID,
+    const initializeGapiClient = () => {
+      window.gapi.client.init({
+        clientId: GOOGLE_CLIENT_ID,
         scope: GOOGLE_API_SCOPES,
-        callback: (tokenResponse: any) => {
-          if (tokenResponse && tokenResponse.access_token) {
-            window.gapi.client.setToken(tokenResponse);
-            setIsSignedIn(true);
-            addLog(LogStatus.SUCCESS, "Successfully connected to Google Drive.");
-          }
-        },
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+      }).catch(error => {
+        console.error('Error initializing GAPI client:', error);
+        addLog(LogStatus.ERROR, "Failed to initialize Google Drive client.");
       });
-    }
-  }, [gapiReady, gisReady, addLog, configError]);
+    };
+    
+    const initializeGisClient = () => {
+        tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: GOOGLE_API_SCOPES,
+            callback: (tokenResponse: any) => {
+                if (tokenResponse && tokenResponse.access_token) {
+                    window.gapi.client.setToken(tokenResponse);
+                    setIsSignedIn(true);
+                    addLog(LogStatus.SUCCESS, "Successfully connected to Google Drive.");
+                } else {
+                    addLog(LogStatus.ERROR, "Google authentication failed.");
+                }
+            },
+        });
+    };
+
+    // Step 2: Wait for the Google scripts (loaded from index.html) to be ready
+    const interval = setInterval(() => {
+      if (window.gapi && window.google) {
+        clearInterval(interval);
+        window.gapi.load('client', () => {
+            // Step 3: Once scripts are loaded, initialize the clients
+            initializeGapiClient();
+            initializeGisClient();
+            setGoogleApiReady(true);
+        });
+      }
+    }, 200); // Check every 200ms
+
+    return () => clearInterval(interval); // Cleanup
+  }, [addLog]);
+
 
   const handleAuthClick = () => {
     if (tokenClientRef.current) {
@@ -167,7 +178,6 @@ export default function App() {
         });
         
         const fileId = response.result.id;
-        // Make another request to get webViewLink
         const fileMetaResponse = await window.gapi.client.drive.files.get({
           fileId: fileId,
           fields: 'webViewLink'
@@ -311,7 +321,7 @@ export default function App() {
         <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1 flex flex-col gap-8">
             <GoogleAuth
-                isReady={gapiReady && gisReady}
+                isReady={googleApiReady}
                 isSignedIn={isSignedIn}
                 onAuthClick={handleAuthClick}
                 onSignoutClick={handleSignoutClick}
