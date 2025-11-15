@@ -1,12 +1,12 @@
 import React from 'react';
 import { GeneratedAsset, AssetType } from '../types';
 import { downloadBlob } from '../utils/fileUtils';
-import { TextFileIcon } from './icons/TextFileIcon.tsx';
-import { AudioFileIcon } from './icons/AudioFileIcon.tsx';
-import { ImageFileIcon } from './icons/ImageFileIcon.tsx';
-import { TitleIcon } from './icons/TitleIcon.tsx';
-import { ThumbnailIcon } from './icons/ThumbnailIcon.tsx';
-import { GoogleDriveIcon } from './icons/GoogleDriveIcon.tsx';
+import { TextFileIcon } from './icons/TextFileIcon';
+import { AudioFileIcon } from './icons/AudioFileIcon';
+import { ImageFileIcon } from './icons/ImageFileIcon';
+import { TitleIcon } from './icons/TitleIcon';
+import { ThumbnailIcon } from './icons/ThumbnailIcon';
+import { GoogleDriveIcon } from './icons/GoogleDriveIcon';
 
 interface AssetCardProps {
   asset: GeneratedAsset;
