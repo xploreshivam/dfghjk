@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface TopicInputProps {
@@ -47,9 +46,6 @@ export const TopicInput: React.FC<TopicInputProps> = ({ topic, setTopic, onStart
           'Make Content'
         )}
       </button>
-      <p className="text-xs text-slate-500 mt-3 text-center">
-        Note: An API Key must be configured in your environment for this to work.
-      </p>
     </div>
   );
 };
