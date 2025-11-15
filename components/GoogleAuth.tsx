@@ -41,6 +41,7 @@ export const GoogleAuth: React.FC<GoogleAuthProps> = ({ isReady, isSignedIn, onA
           onClick={onAuthClick}
           className="w-full bg-sky-600 text-white font-bold py-3 px-4 rounded-md flex items-center justify-center gap-3 transition-colors hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-sky-500"
         >
+          
           <GoogleDriveIcon className="w-5 h-5" />
           Connect Google Drive
         </button>
