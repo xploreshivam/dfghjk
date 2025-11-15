@@ -1,5 +1,5 @@
 import React from 'react';
-import { GoogleDriveIcon } from './icons/GoogleDriveIcon.tsx';
+import { GoogleDriveIcon } from './icons/GoogleDriveIcon';
 
 interface GoogleAuthProps {
   isReady: boolean;
